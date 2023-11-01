@@ -30,20 +30,61 @@ public class ObjectVisualizer extends JFrame {
             return;
         }
 
-        // TO DO: handle arrays
+        // handle Array Objects
+        if (clazz.isArray()) {
+            addArrayField(obj, clazz, rootNode);
+        } else {
+            // Add inheritance nodes
+            addInheritance(clazz, rootNode);
 
-        // Add inheritance nodes
-        addInheritance(clazz, rootNode);
+            // Add method nodes
+            createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
 
-        // Add method nodes
-        createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
+            // Add constructor nodes
+            createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
 
-        // Add constructor nodes
-        createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
+            // Add field nodes
+            addFields(obj, clazz, rootNode);
+        }
+    }
 
-        // Add field nodes
-        addFields(obj, clazz, rootNode);
 
+    private void addArrayField(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
+        // Add component type
+        DefaultMutableTreeNode ctNode = new DefaultMutableTreeNode("Component Type");
+        node.add(ctNode);
+        ctNode.add(new DefaultMutableTreeNode(arr.getComponentType().toString()));
+
+        // Add length
+        node.add(new DefaultMutableTreeNode("Length: "+Array.getLength(obj)));
+
+        DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Values");
+        node.add(vNode);
+        for (int i = 0; i < Array.getLength(obj); i++) {
+            DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode("["+i+"]");
+            vNode.add(indexNode);
+            DefaultMutableTreeNode valNode = new DefaultMutableTreeNode("Value");
+            indexNode.add(valNode);
+            try {
+                Object arrElement = Array.get(obj, i);
+
+                if (arrElement == null)
+                    valNode.add(new DefaultMutableTreeNode("null"));
+                else {
+                    DefaultMutableTreeNode tNode = new DefaultMutableTreeNode("Type");
+                    indexNode.add(tNode);
+                    tNode.add(new DefaultMutableTreeNode(arrElement.getClass().getTypeName()));
+
+                    if (!arrElement.getClass().isPrimitive())
+                        createObjectTree(arrElement, arrElement.getClass(), valNode);
+                    else 
+                        valNode.add(new DefaultMutableTreeNode(arrElement.toString()));
+                } 
+   
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void addInheritance(Class<?> clazz, DefaultMutableTreeNode node) {
@@ -132,8 +173,14 @@ public class ObjectVisualizer extends JFrame {
                 } else if (nodeName.equals("Type")) {
                     setBackgroundNonSelectionColor(new Color(171,50,252)); // purple
                     setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.equals("Value")) {
+                } else if (nodeName.equals("Component Type")) {
+                    setBackgroundNonSelectionColor(new Color(180, 138,252)); // lightpurple
+                    setFont(getFont().deriveFont(Font.BOLD));
+                } else if (nodeName.equals("Value") || nodeName.equals("Values")) {
                     setBackgroundNonSelectionColor(new Color(0,255, 250)); // light blue
+                    setFont(getFont().deriveFont(Font.BOLD));
+                } else if (nodeName.contains("Length: ")) {
+                    setBackgroundNonSelectionColor(new Color(252, 138, 195)); // pink
                     setFont(getFont().deriveFont(Font.BOLD));
                 } else {
                     setBackgroundNonSelectionColor(new Color(255,255, 255)); // white
@@ -149,7 +196,7 @@ public class ObjectVisualizer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             Object objToInspect = null;
             try {
-                objToInspect = new ClassB();
+                objToInspect = new ClassD();
             } catch (Exception e) {
                 e.printStackTrace();
             }  // Replace with your actual object
