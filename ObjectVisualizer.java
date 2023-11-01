@@ -30,6 +30,8 @@ public class ObjectVisualizer extends JFrame {
             return;
         }
 
+        // TO DO: handle arrays
+
         // Add inheritance nodes
         addInheritance(clazz, rootNode);
 
