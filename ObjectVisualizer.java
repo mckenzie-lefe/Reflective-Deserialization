@@ -1,14 +1,9 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeCellRenderer;
 
 import java.awt.*;
 import java.lang.reflect.*;
@@ -35,48 +30,34 @@ public class ObjectVisualizer extends JFrame {
             return;
         }
 
-        // Add interface nodes
-        rootNode.add(createNodes("Interfaces", getInterfaces(clazz), Color.BLUE));
-    
-        // Add superclass nodes
-        rootNode.add(createNodes("Superclass", getSuperclass(clazz), Color.RED));
-
-        // Add field nodes
-        DefaultMutableTreeNode fieldsNode = new DefaultMutableTreeNode("Fields");
-        rootNode.add(fieldsNode);
-        getFields(obj, clazz, fieldsNode);
+        // Add inheritance nodes
+        addInheritance(clazz, rootNode);
 
         // Add method nodes
-        rootNode.add(createNodes("Methods", getMethods(clazz), Color.ORANGE));
+        createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
 
         // Add constructor nodes
-        rootNode.add(createNodes("Constructors", getConstructors(clazz), Color.YELLOW));
+        createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
+
+        // Add field nodes
+        addFields(obj, clazz, rootNode);
 
     }
 
-    private List<String> getInterfaces(Class<?> clazz) {
-        List<String> iNames =  new ArrayList<String>();
+    private void addInheritance(Class<?> clazz, DefaultMutableTreeNode node) {
+        DefaultMutableTreeNode iNode = new DefaultMutableTreeNode("Inheritance");
+        node.add(iNode);
+        iNode.add(new DefaultMutableTreeNode("extends "+ clazz.getSuperclass()));
+
         for(Class<?> inter : clazz.getInterfaces()) {
-            iNames.add(inter.getName());
+            iNode.add(new DefaultMutableTreeNode("implements " +inter.getName().toString()));
         }
-        return iNames;
-    } 
-
-    private List<String> getSuperclass(Class<?> clazz) {
-        List<String> sNames =  new ArrayList<String>();
-        sNames.add(clazz.getSuperclass().getName());
-        return sNames;
-    } 
-
-    private List<String> getConstructors(Class<?> clazz) {
-        List<String> cNames =  new ArrayList<String>();
-        for(Constructor<?> c : clazz.getDeclaredConstructors()) {
-            cNames.add(c.getName());
-        }
-        return cNames;
-    } 
+    }  
     
-    private void getFields(Object obj, Class<?> clazz, DefaultMutableTreeNode node) {
+    private void addFields(Object obj, Class<?> clazz, DefaultMutableTreeNode parentNode) {
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode("Fields");
+        parentNode.add(node);
+
         for(Field field : clazz.getDeclaredFields()) {
             Class<?> fType = field.getType();
 
@@ -118,21 +99,13 @@ public class ObjectVisualizer extends JFrame {
         }
     } 
 
-    private List<String> getMethods(Class<?> clazz) {
-        List<String> mNames =  new ArrayList<String>();
-        for(Method method: clazz.getDeclaredMethods()) {
-            mNames.add(method.getName());
-        }
-        return mNames;
-    } 
+    private void createNodes(String nodeName, AccessibleObject[] members, DefaultMutableTreeNode parentNode) {
+        DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(nodeName);
+        parentNode.add(childNode);
 
-    private DefaultMutableTreeNode createNodes(String nodeName, List<String> members, Color color) {
-        DefaultMutableTreeNode parentNode = new DefaultMutableTreeNode(nodeName);
-        for (String member : members) {
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(member);
-            parentNode.add(node);
+        for (AccessibleObject member : members) {
+            childNode.add(new DefaultMutableTreeNode(member.toString()));
         }
-        return parentNode;
     }
 
     private static class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
@@ -151,11 +124,8 @@ public class ObjectVisualizer extends JFrame {
                     setBackgroundNonSelectionColor(new Color(255,114,0));  // orange
                 } else if (nodeName.equals("Constructors")) {
                     setBackgroundNonSelectionColor(Color.YELLOW);
-                } else if (nodeName.equals("Interfaces")) {
-                    setBackgroundNonSelectionColor(new Color(0,182,255)); //blue
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.equals("Superclass")) {
-                    setBackgroundNonSelectionColor(new Color(255,71,71)); //red
+                } else if (nodeName.equals("Inheritance")) {
+                    setBackgroundNonSelectionColor(new Color(0,182,255)); // blue
                     setFont(getFont().deriveFont(Font.BOLD));
                 } else if (nodeName.equals("Type")) {
                     setBackgroundNonSelectionColor(new Color(171,50,252)); // purple
@@ -164,7 +134,7 @@ public class ObjectVisualizer extends JFrame {
                     setBackgroundNonSelectionColor(new Color(0,255, 250)); // light blue
                     setFont(getFont().deriveFont(Font.BOLD));
                 } else {
-                    setBackgroundNonSelectionColor(new Color(255,255, 255)); //white
+                    setBackgroundNonSelectionColor(new Color(255,255, 255)); // white
                     setFont(getFont().deriveFont(Font.BOLD));
                 }
             }
