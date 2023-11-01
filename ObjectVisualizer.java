@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Vector;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -18,18 +20,20 @@ public class ObjectVisualizer extends JFrame {
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JTree tree = createObjectTree(obj.getClass());
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
+        createObjectTree(obj, obj.getClass(), rootNode);
+        JTree tree = new JTree(new DefaultTreeModel(rootNode));
+        tree.setCellRenderer(new CustomTreeCellRenderer());
+
         JScrollPane scrollPane = new JScrollPane(tree);
         add(scrollPane);
     }
 
-    private JTree createObjectTree(Class<?> clazz) {
+    private void createObjectTree(Object obj, Class<?> clazz, DefaultMutableTreeNode rootNode) {
         if (clazz == null) {
             System.out.println("Class is null");
-            return null;
+            return;
         }
-
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(clazz.getName());
 
         // Add interface nodes
         rootNode.add(createNodes("Interfaces", getInterfaces(clazz), Color.BLUE));
@@ -38,7 +42,9 @@ public class ObjectVisualizer extends JFrame {
         rootNode.add(createNodes("Superclass", getSuperclass(clazz), Color.RED));
 
         // Add field nodes
-        rootNode.add(createNodes("Fields", getFields(clazz), Color.GREEN));
+        DefaultMutableTreeNode fieldsNode = new DefaultMutableTreeNode("Fields");
+        rootNode.add(fieldsNode);
+        getFields(obj, clazz, fieldsNode);
 
         // Add method nodes
         rootNode.add(createNodes("Methods", getMethods(clazz), Color.ORANGE));
@@ -46,9 +52,6 @@ public class ObjectVisualizer extends JFrame {
         // Add constructor nodes
         rootNode.add(createNodes("Constructors", getConstructors(clazz), Color.YELLOW));
 
-        JTree tree = new JTree(new DefaultTreeModel(rootNode));
-        tree.setCellRenderer(new CustomTreeCellRenderer());
-        return tree;
     }
 
     private List<String> getInterfaces(Class<?> clazz) {
@@ -73,12 +76,46 @@ public class ObjectVisualizer extends JFrame {
         return cNames;
     } 
     
-    private List<String> getFields(Class<?> clazz) {
-        List<String> fNames =  new ArrayList<String>();
+    private void getFields(Object obj, Class<?> clazz, DefaultMutableTreeNode node) {
         for(Field field : clazz.getDeclaredFields()) {
-            fNames.add(field.getName());
+            Class<?> fType = field.getType();
+
+            // Add field node
+            DefaultMutableTreeNode fNode = new DefaultMutableTreeNode(field.getName());
+            node.add(fNode);
+
+            // Add field type
+            DefaultMutableTreeNode tNode = new DefaultMutableTreeNode("Type");
+            fNode.add(tNode);
+            tNode.add(new DefaultMutableTreeNode(fType.toString()));
+
+            try {
+                field.setAccessible(true);
+            } catch (Exception e) {
+                fNode.add(new DefaultMutableTreeNode("Error unable to make field accessible"));
+                return;
+            }
+
+            Object fieldObj = null;
+            try {
+                fieldObj= field.get(obj);
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+            // Add field value
+            if(fieldObj != null && !fType.isPrimitive()) {
+                createObjectTree(fieldObj, fieldObj.getClass(), fNode);
+            }
+            else {
+                DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Value");
+                fNode.add(vNode);
+                if (fieldObj == null)
+                    vNode.add(new DefaultMutableTreeNode("null"));
+                else
+                    vNode.add(new DefaultMutableTreeNode(fieldObj.toString()));
+            }
         }
-        return fNames;
     } 
 
     private List<String> getMethods(Class<?> clazz) {
@@ -119,6 +156,12 @@ public class ObjectVisualizer extends JFrame {
                     setFont(getFont().deriveFont(Font.BOLD));
                 } else if (nodeName.equals("Superclass")) {
                     setBackgroundNonSelectionColor(new Color(255,71,71)); //red
+                    setFont(getFont().deriveFont(Font.BOLD));
+                } else if (nodeName.equals("Type")) {
+                    setBackgroundNonSelectionColor(new Color(171,50,252)); // purple
+                    setFont(getFont().deriveFont(Font.BOLD));
+                } else if (nodeName.equals("Value")) {
+                    setBackgroundNonSelectionColor(new Color(0,255, 250)); // light blue
                     setFont(getFont().deriveFont(Font.BOLD));
                 } else {
                     setBackgroundNonSelectionColor(new Color(255,255, 255)); //white
