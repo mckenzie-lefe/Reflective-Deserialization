@@ -1,3 +1,4 @@
+import ObjectPool.*;
 import java.util.*;
 
 import javax.swing.*;
@@ -22,6 +23,10 @@ public class ObjectVisualizer extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(tree);
         add(scrollPane);
+    }
+
+    public void pp (String m) {
+        System.out.println(m);
     }
 
     private void createObjectTree(Object obj, Class<?> clazz, DefaultMutableTreeNode rootNode) {
@@ -60,6 +65,7 @@ public class ObjectVisualizer extends JFrame {
 
         DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Values");
         node.add(vNode);
+
         for (int i = 0; i < Array.getLength(obj); i++) {
             DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode("["+i+"]");
             vNode.add(indexNode);
@@ -127,17 +133,21 @@ public class ObjectVisualizer extends JFrame {
                 e.printStackTrace();
             }
 
-            // Add field value
-            if(fieldObj != null && !fType.isPrimitive()) {
-                createObjectTree(fieldObj, fieldObj.getClass(), fNode);
-            }
-            else {
-                DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Value");
-                fNode.add(vNode);
-                if (fieldObj == null)
-                    vNode.add(new DefaultMutableTreeNode("null"));
-                else
-                    vNode.add(new DefaultMutableTreeNode(fieldObj.toString()));
+            if (fType.isArray()) {
+                addArrayField(fieldObj, fType, fNode);
+            } else {
+                // Add field value
+                if(fieldObj != null && !fType.isPrimitive()) {
+                    createObjectTree(fieldObj, fieldObj.getClass(), fNode);
+                }
+                else {
+                    DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Value");
+                    fNode.add(vNode);
+                    if (fieldObj == null)
+                        vNode.add(new DefaultMutableTreeNode("null"));
+                    else
+                        vNode.add(new DefaultMutableTreeNode(fieldObj.toString()));
+                }
             }
         }
     } 
@@ -194,9 +204,13 @@ public class ObjectVisualizer extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            Object objToInspect = null;
+            SimpleObject so = new SimpleObject(4);
+            ArrayOfObjects objToInspect = null;
             try {
-                objToInspect = new ClassD();
+                objToInspect = new ArrayOfObjects(3);
+                objToInspect.setObjectArrayElement(0, so);
+                objToInspect.setObjectArrayElement(1, so);
+                objToInspect.setObjectArrayElement(2, new SimpleObject(6));
             } catch (Exception e) {
                 e.printStackTrace();
             }  // Replace with your actual object

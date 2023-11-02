@@ -1,4 +1,5 @@
-import org.jdom2.Document;
+import ObjectPool.*;
+import org.jdom2.*;
 import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
 
@@ -12,7 +13,7 @@ import javax.swing.SwingUtilities;
 
 public class Deserializer {
 
-    private Map<Integer, Object> objectMap;
+    private Map<String, Object> objectMap;
 
     public Deserializer() {
         objectMap = new HashMap<>();
@@ -35,33 +36,33 @@ public class Deserializer {
                     obj = Array.newInstance(objClass.getComponentType(), Integer.valueOf(objectElement.getAttributeValue("length")));
 
                 else {
-                    Constructor con = objClass.getDeclaredConstructor();
-                    con.setAccessible(true);
-                    obj = con.newInstance();
+                    Constructor constructor = objClass.getDeclaredConstructor(new Class[]{});
+                    constructor.setAccessible(true);
+                    obj = constructor.newInstance(new Object[] {});
                 }
-
-                objectMap.put(Integer.parseInt(objectElement.getAttributeValue("id")), obj);
+                pp("first obj: " + obj);
             } catch (ClassNotFoundException |  InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
             }
+            objectMap.put(objectElement.getAttributeValue("id"), obj);
         }
 
         // Second pass: Populate fields
         for (Element objectElement : objectElements) {
             
+            Object object = objectMap.get(objectElement.getAttributeValue("id"));
+            pp("\nPOP: " + object.getClass().getName());
 
-            Object obj = objectMap.get(objectElement.getAttributeValue("id"));
-
-            if (obj == null)
+            if (object == null)
                 continue;
 
-            Class<?> clazz = obj.getClass();
+            Class<?> clazz = object.getClass();
             List<Element> elements = objectElement.getChildren();
 
             if (clazz.isArray()) {
-               for (int i = 0; i < Array.getLength(obj); i++) {
-                   Array.set(obj, i, getElementValue(elements.get(i), clazz.getComponentType(), objectMap));
-               }
+                for (int i = 0; i < Array.getLength(object); i++) {
+                    Array.set(object, i, getElementValue(elements.get(i), clazz.getComponentType(), objectMap));
+                }
 
            } else {
                 for (Element fieldElement : elements) {
@@ -69,11 +70,10 @@ public class Deserializer {
                     String declaringClassName = fieldElement.getAttributeValue("declaringclass");
 
                     try {
-                        Class<?> declaringClass = Class.forName(declaringClassName);
-                        Field field = declaringClass.getDeclaredField(fieldName);
+                        Field field = Class.forName(declaringClassName).getDeclaredField(fieldName);
 
                         field.setAccessible(true);
-                        field.set(obj, getElementValue(fieldElement, field.getType(), objectMap));
+                        field.set(object, getElementValue(fieldElement.getChildren().get(0), field.getType(), objectMap));
 
                     } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
@@ -83,10 +83,10 @@ public class Deserializer {
         }
         
         // The root object is the first one in the map
-        return objectMap.get(0);
+        return objectMap.get("0");
     }
 
-    private Object getElementValue(Element el, Class<?> clazz, Map<Integer, Object> objectMap)
+    private Object getElementValue(Element el, Class<?> clazz, Map<String, Object> objectMap)
     {
         String value = el.getText();
         if (el.getName().equals("value")) {
@@ -106,56 +106,42 @@ public class Deserializer {
                 return Double.valueOf(value);
             else if (clazz.equals(char.class))
                 return value.charAt(0);
-            else {
+            else 
                 return null;
-            }
 
         } else 
-            return objectMap.get(value);
+            return objectMap.get(value);  
+    }
+
+    public void pp(String m) {
+        System.out.println(m);
     }
 
     public static void main(String[] args) {
         String xmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
-                "<serialized>\r\n" + //
-                "  <object class=\"ClassB\" id=\"0\">\r\n" + //
-                "    <field name=\"val\" declaringclass=\"ClassB\">\r\n" + //
-                "      <reference>1</reference>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val2\" declaringclass=\"ClassB\">\r\n" + //
-                "      <reference>2</reference>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val3\" declaringclass=\"ClassB\" />\r\n" + //
-                "  </object>\r\n" + //
-                "  <object class=\"ClassA\" id=\"1\">\r\n" + //
-                "    <field name=\"val\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>3</value>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val2\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>0.2</value>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val3\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>true</value>\r\n" + //
-                "    </field>\r\n" + //
-                "  </object>\r\n" + //
-                "  <object class=\"ClassA\" id=\"2\">\r\n" + //
-                "    <field name=\"val\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>12</value>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val2\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>0.2</value>\r\n" + //
-                "    </field>\r\n" + //
-                "    <field name=\"val3\" declaringclass=\"ClassA\">\r\n" + //
-                "      <value>true</value>\r\n" + //
-                "    </field>\r\n" + //
-                "  </object>\r\n" + //
-                "  <object class=\"[Ljava.lang.String;\" id=\"3\" length=\"5\">\r\n" + //
-		        "     <value>S</value>\r\n" + //
-		        "     <value>m</value>\r\n" + //
-		        "     <value>i</value>\r\n" + //
-		        "     <value>t</value>\r\n" + //
-		        "     <value>h</value>\r\n" + //
-	            "  </object>\r\n" + //
-                "</serialized>";
+            "<serialized>\r\n" + //
+            "  <object class=\"ObjectPool.ArrayOfObjects\" id=\"0\">\r\n" + //
+            "    <field name=\"simpleObjs\" declaringclass=\"ObjectPool.ArrayOfObjects\">\r\n" + //
+            "      <reference>1</reference>\r\n" + //
+            "    </field>\r\n" + //
+            "  </object>\r\n" + //
+            "  <object class=\"[LObjectPool.SimpleObject;\" id=\"1\" length=\"3\">\r\n" + //
+            "    <reference>2</reference>\r\n" + //
+            "    <reference>2</reference>\r\n" + //
+            "    <reference>3</reference>\r\n" + //
+            "  </object>\r\n" + //
+            "  <object class=\"ObjectPool.SimpleObject\" id=\"2\">\r\n" + //
+            "    <field name=\"primitiveInt\" declaringclass=\"ObjectPool.SimpleObject\">\r\n" + //
+            "      <value>4</value>\r\n" + //
+            "    </field>\r\n" + //
+            "  </object>\r\n" + //
+            "  <object class=\"ObjectPool.SimpleObject\" id=\"3\">\r\n" + //
+            "    <field name=\"primitiveInt\" declaringclass=\"ObjectPool.SimpleObject\">\r\n" + //
+            "      <value>6</value>\r\n" + //
+            "    </field>\r\n" + //
+            "  </object>\r\n" + //
+            "</serialized>";
+
         SAXBuilder saxBuilder = new SAXBuilder();
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
