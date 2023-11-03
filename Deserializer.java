@@ -197,10 +197,9 @@ public class Deserializer {
             Deserializer deserializer = new Deserializer();
             Object reconstitutedObject = deserializer.deserialize(document);
 
-            
             // Use the reconstitutedObject as needed
-            //System.out.println(reconstitutedObject);
-            //SwingUtilities.invokeLater(() -> {new ObjectVisualizer(reconstitutedObject).setVisible(true);});
+            System.out.println(reconstitutedObject);
+            SwingUtilities.invokeLater(() -> {new ObjectVisualizer(reconstitutedObject).setVisible(true);});
             
         } catch (Exception e) {
             e.printStackTrace();

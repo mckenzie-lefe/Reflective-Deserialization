@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class CollectionInstance {
     
-    private ArrayList<Object> objectRefs;
+    public ArrayList<Object> objectRefs;
 
     public CollectionInstance() {
         objectRefs = new ArrayList<Object>();

@@ -2,7 +2,7 @@ package ObjectPool;
 
 public class ReferenceSimpleObject {
     
-    private SimpleObject simpleObj;
+    public SimpleObject simpleObj;
 
     public ReferenceSimpleObject() {
         simpleObj = null;

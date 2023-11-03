@@ -1,7 +1,7 @@
 package ObjectPool;
 
 public class SimpleObject {
-    private int primitiveInt;
+    public int primitiveInt;
 
     public SimpleObject(){}
 

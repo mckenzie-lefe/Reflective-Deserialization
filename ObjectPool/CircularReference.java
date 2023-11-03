@@ -1,7 +1,7 @@
 package ObjectPool;
 
 public class CircularReference {
-    private CircularReference circularRef;
+    public CircularReference circularRef;
 
     public CircularReference() {
         circularRef = null;

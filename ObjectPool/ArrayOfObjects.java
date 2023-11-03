@@ -2,7 +2,7 @@ package ObjectPool;
 
 public class ArrayOfObjects{
     
-    private SimpleObject[] simpleObjs;
+    public SimpleObject[] simpleObjs;
 
     public ArrayOfObjects() { }
 
