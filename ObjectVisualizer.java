@@ -11,6 +11,8 @@ import java.lang.reflect.*;
 
 public class ObjectVisualizer extends JFrame {
 
+    private Map<Object, DefaultMutableTreeNode> objectMap = new HashMap<>();
+
     public ObjectVisualizer(Object obj) {
         super("Object Visualizer");
         setSize(800, 600);
@@ -26,28 +28,31 @@ public class ObjectVisualizer extends JFrame {
                     Object collectionObj = (Object) iter.next();
                     
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+                    objectMap.put(collectionObj, childNode);
                     createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
                     rootNode.add(childNode);
+                    
+                    objectMap.clear();
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
         } else {
             System.out.println("normal");
+            
             rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
+            objectMap.put(obj, rootNode);
             createObjectTree(obj, obj.getClass(), rootNode);
+            
         }
         
         JTree tree = new JTree(new DefaultTreeModel(rootNode));
-        tree.setCellRenderer(new CustomTreeCellRenderer());
+        tree.setCellRenderer(new DefaultTreeCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(tree);
         add(scrollPane);
-    }
-
-    public void pp (String m) {
-        System.out.println(m);
     }
 
     private void createObjectTree(Object obj, Class<?> clazz, DefaultMutableTreeNode rootNode) {
@@ -55,21 +60,21 @@ public class ObjectVisualizer extends JFrame {
             System.out.println("Class is null");
             return;
         }
-        System.out.println(obj);
 
         // handle Array Objects
-        if (clazz.isArray()) {
+        if (clazz.isArray()) 
             addArrayField(obj, clazz, rootNode);
-        } else {
+        else {
+            rootNode.add(new DefaultMutableTreeNode("ID: " + Integer.toHexString(System.identityHashCode(obj))));
 
             // Add inheritance nodes
-            addInheritance(clazz, rootNode);
+            //addInheritance(clazz, rootNode);
             
             // Add method nodes
-            createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
+            //createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
 
             // Add constructor nodes
-            createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
+            //createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
 
             // Add field nodes
             addFields(obj, clazz, rootNode);
@@ -78,38 +83,36 @@ public class ObjectVisualizer extends JFrame {
 
     private void addArrayField(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
         // Add component type
-        DefaultMutableTreeNode ctNode = new DefaultMutableTreeNode("Component Type");
-        node.add(ctNode);
-        ctNode.add(new DefaultMutableTreeNode(arr.getComponentType().toString()));
+        node.add(new DefaultMutableTreeNode("Component Type: " +arr.getComponentType().toString()));
 
         // Add length
         node.add(new DefaultMutableTreeNode("Length: "+Array.getLength(obj)));
-
-        // Add inheritance nodes
-        addInheritance(arr, node);
 
         DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Values");
         node.add(vNode);
 
         for (int i = 0; i < Array.getLength(obj); i++) {
-            DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode("["+i+"]");
+            DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode(node.getUserObject()+"["+i+"]");
             vNode.add(indexNode);
-            DefaultMutableTreeNode valNode = new DefaultMutableTreeNode("Value");
-            indexNode.add(valNode);
+
             try {
                 Object arrElement = Array.get(obj, i);
 
                 if (arrElement == null)
-                    valNode.add(new DefaultMutableTreeNode("null"));
+                    indexNode.add(new DefaultMutableTreeNode("Value: null"));
                 else {
-                    DefaultMutableTreeNode tNode = new DefaultMutableTreeNode("Type");
-                    indexNode.add(tNode);
-                    tNode.add(new DefaultMutableTreeNode(arrElement.getClass().getTypeName()));
+                    indexNode.add(new DefaultMutableTreeNode("Type: "+arrElement.getClass().getTypeName()));
 
-                    if (!arrElement.getClass().isPrimitive())
-                        createObjectTree(arrElement, arrElement.getClass(), valNode);
+                    if (!arrElement.getClass().isPrimitive()) {
+                        if(!objectMap.containsKey(arrElement)) {
+                            objectMap.put(arrElement, indexNode);
+                            createObjectTree(arrElement, arrElement.getClass(), indexNode);
+                        } else {
+                            indexNode.add(new DefaultMutableTreeNode("Reference to "+arrElement.toString()));
+                        }
+                    }  
                     else 
-                        valNode.add(new DefaultMutableTreeNode(arrElement.toString()));
+                        indexNode.add(new DefaultMutableTreeNode("Value: "+arrElement.toString()));
                 } 
    
             } catch (IllegalArgumentException e) {
@@ -140,9 +143,7 @@ public class ObjectVisualizer extends JFrame {
             node.add(fNode);
 
             // Add field type
-            DefaultMutableTreeNode tNode = new DefaultMutableTreeNode("Type");
-            fNode.add(tNode);
-            tNode.add(new DefaultMutableTreeNode(fType.toString()));
+            fNode.add(new DefaultMutableTreeNode("Type: " + fType.toString()));
 
             try {
                 field.setAccessible(true);
@@ -156,6 +157,7 @@ public class ObjectVisualizer extends JFrame {
                 fieldObj= field.get(obj);
             } catch (IllegalArgumentException | IllegalAccessException e) {
                 e.printStackTrace();
+                return;
             }
 
             if (fType.isArray()) {
@@ -163,15 +165,19 @@ public class ObjectVisualizer extends JFrame {
             } else {
                 // Add field value
                 if(fieldObj != null && !fType.isPrimitive()) {
-                    createObjectTree(fieldObj, fieldObj.getClass(), fNode);
+                    if(!objectMap.containsKey(fieldObj)) {
+                        objectMap.put(fieldObj, fNode);
+                        createObjectTree(fieldObj, fieldObj.getClass(), fNode);
+
+                    } else 
+                        fNode.add(new DefaultMutableTreeNode("Reference to "+fieldObj.toString()));
+
                 }
                 else {
-                    DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Value");
-                    fNode.add(vNode);
                     if (fieldObj == null)
-                        vNode.add(new DefaultMutableTreeNode("null"));
+                        fNode.add(new DefaultMutableTreeNode("Value: null"));
                     else
-                        vNode.add(new DefaultMutableTreeNode(fieldObj.toString()));
+                        fNode.add(new DefaultMutableTreeNode("Value: " +fieldObj.toString()));
                 }
             }
         }
@@ -183,47 +189,6 @@ public class ObjectVisualizer extends JFrame {
 
         for (AccessibleObject member : members) {
             childNode.add(new DefaultMutableTreeNode(member.toString()));
-        }
-    }
-
-    private static class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
-        @Override
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
-                                                      boolean leaf, int row, boolean hasFocus) {
-            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
-
-            DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
-
-            if (node.getUserObject() instanceof String) {
-                String nodeName = (String) node.getUserObject();
-                if (nodeName.equals("Fields")) {
-                    setBackgroundNonSelectionColor(new Color(0,234,23)); // green
-                } else if (nodeName.equals("Methods")) {
-                    setBackgroundNonSelectionColor(new Color(255,114,0));  // orange
-                } else if (nodeName.equals("Constructors")) {
-                    setBackgroundNonSelectionColor(Color.YELLOW);
-                } else if (nodeName.equals("Inheritance")) {
-                    setBackgroundNonSelectionColor(new Color(0,182,255)); // blue
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.equals("Type")) {
-                    setBackgroundNonSelectionColor(new Color(171,50,252)); // purple
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.equals("Component Type")) {
-                    setBackgroundNonSelectionColor(new Color(180, 138,252)); // lightpurple
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.equals("Value") || nodeName.equals("Values")) {
-                    setBackgroundNonSelectionColor(new Color(0,255, 250)); // light blue
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else if (nodeName.contains("Length: ")) {
-                    setBackgroundNonSelectionColor(new Color(252, 138, 195)); // pink
-                    setFont(getFont().deriveFont(Font.BOLD));
-                } else {
-                    setBackgroundNonSelectionColor(new Color(255,255, 255)); // white
-                    setFont(getFont().deriveFont(Font.BOLD));
-                }
-            }
-
-            return this;
         }
     }
 
@@ -239,8 +204,7 @@ public class ObjectVisualizer extends JFrame {
             } catch (Exception e) {
                 e.printStackTrace();
             }  
-            //Map<String, Object> objectMap = new HashMap<>();
-            //objectMap.put(so);
+
 
             new ObjectVisualizer(objToInspect).setVisible(true);
         });

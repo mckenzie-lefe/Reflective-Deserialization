@@ -24,38 +24,29 @@ public class Deserializer {
         Element rootElement = document.getRootElement();
         List<Element> objectElements = rootElement.getChildren("object");
 
-        // First pass Create objects and store them in the map
-        for (Element objectElement : objectElements) {
-            Object obj = null;
-            String className = objectElement.getAttributeValue("class");
+        // Create objects & store them in the map
+        createObjectInstances(objectElements);
+        
+        // Populate object fields
+        populateFields(objectElements);
 
-            try {
-                Class<?> objClass = Class.forName(className);
-
-                if (objClass.isArray())
-                    obj = Array.newInstance(objClass.getComponentType(), Integer.valueOf(objectElement.getAttributeValue("length")));
-
-                else {
-                    Constructor constructor = objClass.getDeclaredConstructor(new Class[]{});
-                    constructor.setAccessible(true);
-                    obj = constructor.newInstance(new Object[] {});
-                }
-                pp("first obj: " + obj);
-
-            } catch (ClassNotFoundException |  InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
-                //e.printStackTrace();
-            }
-            objectMap.put(objectElement.getAttributeValue("id"), obj);
+        List<Object> ol = new ArrayList<>();
+        for(Map.Entry<String, Object> e : objectMap.entrySet()) {
+            ol.add(e.getValue());
         }
 
-        // Second pass: Populate fields
-        for (Element objectElement : objectElements) {
-            
-            Object object = objectMap.get(objectElement.getAttributeValue("id"));
-            pp("\nPOP: " + object.getClass().getName());
+        //return objectMap.get("0");
+        return ol;
+    }
 
+    private void populateFields(List<Element> objectElements) {
+        for (Element objectElement : objectElements) {
+            Object object = objectMap.get(objectElement.getAttributeValue("id"));
+        
             if (object == null)
                 continue;
+
+            pp("\nPopulate: " + object.getClass().getName());
 
             Class<?> clazz = object.getClass();
             List<Element> elements = objectElement.getChildren();
@@ -65,7 +56,7 @@ public class Deserializer {
                     Array.set(object, i, getElementValue(elements.get(i), clazz.getComponentType(), objectMap));
                 }
 
-           } else {
+            } else {
                 for (Element fieldElement : elements) {
                     String fieldName = fieldElement.getAttributeValue("name");
                     String declaringClassName = fieldElement.getAttributeValue("declaringclass");
@@ -85,15 +76,34 @@ public class Deserializer {
                         e.printStackTrace();
                     }
                 }
-           }
+            }
         }
+    }
 
-        List<Object> ol = new ArrayList<>();
-        for(Map.Entry<String, Object> e : objectMap.entrySet()) {
-            ol.add(e.getValue());
+    private void createObjectInstances(List<Element> objectElements) {
+        // Create objects and store them in the map
+        for (Element objectElement : objectElements) {
+            Object obj = null;
+            String className = objectElement.getAttributeValue("class");
+
+            try {
+                Class<?> objClass = Class.forName(className);
+
+                if (objClass.isArray())
+                    obj = Array.newInstance(objClass.getComponentType(), Integer.valueOf(objectElement.getAttributeValue("length")));
+
+                else {
+                    Constructor constructor = objClass.getDeclaredConstructor(new Class[]{});
+                    constructor.setAccessible(true);
+                    obj = constructor.newInstance(new Object[] {});
+                }
+                pp("Object:" + obj);
+
+            } catch (ClassNotFoundException |  InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            objectMap.put(objectElement.getAttributeValue("id"), obj);
         }
-
-        return objectMap.get("0");
     }
 
     private Object getElementValue(Element el, Class<?> clazz, Map<String, Object> objectMap)
