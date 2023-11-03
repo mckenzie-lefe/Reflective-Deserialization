@@ -6,17 +6,20 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 
-import java.awt.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.*;
 
 public class ObjectVisualizer extends JFrame {
 
     private Map<Object, DefaultMutableTreeNode> objectMap = new HashMap<>();
+    private JTree tree;
 
     public ObjectVisualizer(Object obj) {
         super("Object Visualizer");
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         DefaultMutableTreeNode rootNode;
 
         if(Collection.class.isAssignableFrom(obj.getClass())) {
@@ -31,7 +34,7 @@ public class ObjectVisualizer extends JFrame {
                     objectMap.put(collectionObj, childNode);
                     createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
                     rootNode.add(childNode);
-                    
+
                     objectMap.clear();
                 }
 
@@ -48,11 +51,33 @@ public class ObjectVisualizer extends JFrame {
             
         }
         
-        JTree tree = new JTree(new DefaultTreeModel(rootNode));
+        tree = new JTree(new DefaultTreeModel(rootNode));
         tree.setCellRenderer(new DefaultTreeCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(tree);
         add(scrollPane);
+        setVisible(true);
+    }
+
+    public void saveTree(String file) {
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writeNodeToFile(rootNode, writer, "");
+            System.out.println("Tree contents written to "+ file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void writeNodeToFile(DefaultMutableTreeNode node, BufferedWriter writer, String indent) throws IOException {
+        writer.write(indent + node.getUserObject().toString() + "\n");
+
+        Enumeration<?> children = node.children();
+        while (children.hasMoreElements()) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) children.nextElement();
+            writeNodeToFile(child, writer, indent + "  ");
+        }
     }
 
     private void createObjectTree(Object obj, Class<?> clazz, DefaultMutableTreeNode rootNode) {
@@ -60,13 +85,32 @@ public class ObjectVisualizer extends JFrame {
             System.out.println("Class is null");
             return;
         }
+        rootNode.add(new DefaultMutableTreeNode("ID: " + Integer.toHexString(System.identityHashCode(obj))));
 
         // handle Array Objects
         if (clazz.isArray()) 
             addArrayField(obj, clazz, rootNode);
-        else {
-            rootNode.add(new DefaultMutableTreeNode("ID: " + Integer.toHexString(System.identityHashCode(obj))));
 
+        // handle collections
+        else if(Collection.class.isAssignableFrom(obj.getClass())) {
+            Iterator<?> iter = ((Iterable<?>) obj).iterator();
+            int i = 0;
+            while(iter.hasNext()) {
+                Object collectionObj = (Object) iter.next();
+                DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode(rootNode.getUserObject()+"["+i+"]");
+                rootNode.add(indexNode);
+                i++;
+                
+                DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+                objectMap.put(collectionObj, childNode);
+                createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
+                indexNode.add(childNode);
+            }
+            // Add length
+            rootNode.add(new DefaultMutableTreeNode("Length: "+ Integer.toString(i)));
+
+        // handle  simple objects
+        } else {
             // Add inheritance nodes
             //addInheritance(clazz, rootNode);
             
@@ -76,14 +120,14 @@ public class ObjectVisualizer extends JFrame {
             // Add constructor nodes
             //createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
 
-            // Add field nodes
             addFields(obj, clazz, rootNode);
         }
     }
 
     private void addArrayField(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
         // Add component type
-        node.add(new DefaultMutableTreeNode("Component Type: " +arr.getComponentType().toString()));
+        Class<?> elType = arr.getComponentType();
+        node.add(new DefaultMutableTreeNode("Component Type: " +elType.toString()));
 
         // Add length
         node.add(new DefaultMutableTreeNode("Length: "+Array.getLength(obj)));
@@ -103,7 +147,7 @@ public class ObjectVisualizer extends JFrame {
                 else {
                     indexNode.add(new DefaultMutableTreeNode("Type: "+arrElement.getClass().getTypeName()));
 
-                    if (!arrElement.getClass().isPrimitive()) {
+                    if (!elType.isPrimitive()) {
                         if(!objectMap.containsKey(arrElement)) {
                             objectMap.put(arrElement, indexNode);
                             createObjectTree(arrElement, arrElement.getClass(), indexNode);
@@ -121,16 +165,6 @@ public class ObjectVisualizer extends JFrame {
         }
     }
 
-    private void addInheritance(Class<?> clazz, DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode iNode = new DefaultMutableTreeNode("Inheritance");
-        node.add(iNode);
-        iNode.add(new DefaultMutableTreeNode("extends "+ clazz.getSuperclass()));
-
-        for(Class<?> inter : clazz.getInterfaces()) {
-            iNode.add(new DefaultMutableTreeNode("implements " +inter.getName().toString()));
-        }
-    }  
-    
     private void addFields(Object obj, Class<?> clazz, DefaultMutableTreeNode parentNode) {
         DefaultMutableTreeNode node = new DefaultMutableTreeNode("Fields");
         parentNode.add(node);
@@ -183,6 +217,16 @@ public class ObjectVisualizer extends JFrame {
         }
     } 
 
+    private void addInheritance(Class<?> clazz, DefaultMutableTreeNode node) {
+        DefaultMutableTreeNode iNode = new DefaultMutableTreeNode("Inheritance");
+        node.add(iNode);
+        iNode.add(new DefaultMutableTreeNode("extends "+ clazz.getSuperclass()));
+
+        for(Class<?> inter : clazz.getInterfaces()) {
+            iNode.add(new DefaultMutableTreeNode("implements " +inter.getName().toString()));
+        }
+    }  
+
     private void createNodes(String nodeName, AccessibleObject[] members, DefaultMutableTreeNode parentNode) {
         DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(nodeName);
         parentNode.add(childNode);
@@ -196,6 +240,7 @@ public class ObjectVisualizer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             SimpleObject so = new SimpleObject(4);
             ArrayOfObjects objToInspect = null;
+            
             try {
                 objToInspect = new ArrayOfObjects(3);
                 objToInspect.setObjectArrayElement(0, so);
@@ -204,7 +249,6 @@ public class ObjectVisualizer extends JFrame {
             } catch (Exception e) {
                 e.printStackTrace();
             }  
-
 
             new ObjectVisualizer(objToInspect).setVisible(true);
         });

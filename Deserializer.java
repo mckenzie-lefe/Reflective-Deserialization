@@ -4,10 +4,7 @@ import org.jdom2.input.SAXBuilder;
 
 import java.io.StringReader;
 import java.lang.reflect.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import javax.swing.SwingUtilities;
 
@@ -40,22 +37,41 @@ public class Deserializer {
     }
 
     private void populateFields(List<Element> objectElements) {
+        if (objectElements == null) 
+            return;
+        
         for (Element objectElement : objectElements) {
             Object object = objectMap.get(objectElement.getAttributeValue("id"));
         
             if (object == null)
                 continue;
 
-            pp("\nPopulate: " + object.getClass().getName());
+            System.out.println("\nPopulate: " + object.getClass().getName());
 
             Class<?> clazz = object.getClass();
             List<Element> elements = objectElement.getChildren();
+
+            if (elements.size() == 0)
+                return;
 
             if (clazz.isArray()) {
                 for (int i = 0; i < Array.getLength(object); i++) {
                     Array.set(object, i, getElementValue(elements.get(i), clazz.getComponentType(), objectMap));
                 }
 
+            } else if (Collection.class.isAssignableFrom(object.getClass())) {
+                for (int i = 0; i < Integer.valueOf(objectElement.getAttributeValue("length")); i++) {
+                    try {
+                        // Find the add method of the collection class
+                        Method addMethod = Collection.class.getDeclaredMethod("add", Object.class);
+                        addMethod.setAccessible(true);
+                        addMethod.invoke(object, getElementValue(elements.get(i), elements.get(i).getClass(), objectMap));
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                
             } else {
                 for (Element fieldElement : elements) {
                     String fieldName = fieldElement.getAttributeValue("name");
@@ -81,7 +97,6 @@ public class Deserializer {
     }
 
     private void createObjectInstances(List<Element> objectElements) {
-        // Create objects and store them in the map
         for (Element objectElement : objectElements) {
             Object obj = null;
             String className = objectElement.getAttributeValue("class");
@@ -91,13 +106,11 @@ public class Deserializer {
 
                 if (objClass.isArray())
                     obj = Array.newInstance(objClass.getComponentType(), Integer.valueOf(objectElement.getAttributeValue("length")));
-
                 else {
                     Constructor constructor = objClass.getDeclaredConstructor(new Class[]{});
                     constructor.setAccessible(true);
                     obj = constructor.newInstance(new Object[] {});
                 }
-                pp("Object:" + obj);
 
             } catch (ClassNotFoundException |  InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
@@ -131,10 +144,6 @@ public class Deserializer {
 
         } else 
             return objectMap.get(value);  
-    }
-
-    public void pp(String m) {
-        System.out.println(m);
     }
 
     public static void main(String[] args) {

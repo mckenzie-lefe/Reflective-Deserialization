@@ -2,15 +2,15 @@ package ObjectPool;
 
 public class ArrayOfPrimitives {
 
-    public int[] array;
+    public int[] intArr;
 
     public ArrayOfPrimitives() {}
 
     public ArrayOfPrimitives(int[] arr) {
-        this.array = arr;
+        this.intArr = arr;
     }
 
     public void setArray(int[] arr) {
-        array = arr;
+        intArr = arr;
     }
 }
