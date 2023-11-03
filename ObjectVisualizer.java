@@ -20,38 +20,8 @@ public class ObjectVisualizer extends JFrame {
         super("Object Visualizer");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        DefaultMutableTreeNode rootNode;
 
-        if(Collection.class.isAssignableFrom(obj.getClass())) {
-            rootNode = new DefaultMutableTreeNode("Objects");
-            try {
-                Iterator<?> iter = ((Iterable<?>) obj).iterator();
-                System.out.println(iter);
-                while(iter.hasNext()) {
-                    Object collectionObj = (Object) iter.next();
-                    
-                    DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
-                    objectMap.put(collectionObj, childNode);
-                    createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
-                    rootNode.add(childNode);
-
-                    objectMap.clear();
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        } else {
-            System.out.println("normal");
-            
-            rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
-            objectMap.put(obj, rootNode);
-            createObjectTree(obj, obj.getClass(), rootNode);
-            
-        }
-        
-        tree = new JTree(new DefaultTreeModel(rootNode));
+        tree = new JTree(new DefaultTreeModel(createTree(obj)));
         tree.setCellRenderer(new DefaultTreeCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(tree);
@@ -59,72 +29,72 @@ public class ObjectVisualizer extends JFrame {
         setVisible(true);
     }
 
-    public void saveTree(String file) {
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
+    private DefaultMutableTreeNode createTree(Object obj) {
+        DefaultMutableTreeNode rootNode;
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writeNodeToFile(rootNode, writer, "");
-            System.out.println("Tree contents written to "+ file);
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(Collection.class.isAssignableFrom(obj.getClass())) {
+            rootNode = new DefaultMutableTreeNode("Received Objects:");
+            try {
+                Iterator<?> iter = ((Iterable<?>) obj).iterator();
+                System.out.println(iter);
+                while(iter.hasNext()) {
+                    Object collectionObj = (Object) iter.next();
+
+                    if(!objectMap.containsKey(collectionObj)) {
+                        DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+                        objectMap.put(collectionObj, childNode);
+                        createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
+                        rootNode.add(childNode);
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } else {    
+            rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
+            objectMap.put(obj, rootNode);
+            createObjectTree(obj, obj.getClass(), rootNode);
         }
-    }
 
-    private void writeNodeToFile(DefaultMutableTreeNode node, BufferedWriter writer, String indent) throws IOException {
-        writer.write(indent + node.getUserObject().toString() + "\n");
-
-        Enumeration<?> children = node.children();
-        while (children.hasMoreElements()) {
-            DefaultMutableTreeNode child = (DefaultMutableTreeNode) children.nextElement();
-            writeNodeToFile(child, writer, indent + "  ");
-        }
+        return rootNode;
     }
 
     private void createObjectTree(Object obj, Class<?> clazz, DefaultMutableTreeNode rootNode) {
-        if (clazz == null) {
-            System.out.println("Class is null");
+        if (clazz == null) 
             return;
-        }
+    
         rootNode.add(new DefaultMutableTreeNode("ID: " + Integer.toHexString(System.identityHashCode(obj))));
-
-        // handle Array Objects
-        if (clazz.isArray()) 
-            addArrayField(obj, clazz, rootNode);
-
-        // handle collections
-        else if(Collection.class.isAssignableFrom(obj.getClass())) {
-            Iterator<?> iter = ((Iterable<?>) obj).iterator();
-            int i = 0;
-            while(iter.hasNext()) {
-                Object collectionObj = (Object) iter.next();
-                DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode(rootNode.getUserObject()+"["+i+"]");
-                rootNode.add(indexNode);
-                i++;
-                
-                DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
-                objectMap.put(collectionObj, childNode);
-                createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
-                indexNode.add(childNode);
-            }
-            // Add length
-            rootNode.add(new DefaultMutableTreeNode("Length: "+ Integer.toString(i)));
-
-        // handle  simple objects
-        } else {
-            // Add inheritance nodes
-            //addInheritance(clazz, rootNode);
-            
-            // Add method nodes
-            //createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
-
-            // Add constructor nodes
-            //createNodes("Constructors", clazz.getDeclaredConstructors(), rootNode);
-
+        
+        if (clazz.isArray())                                        // handle Array Objects
+            addArray(obj, clazz, rootNode);
+        else if(Collection.class.isAssignableFrom(obj.getClass()))  // handle collections
+            addCollection(obj, rootNode);
+        else                                                        // handle simple objects
             addFields(obj, clazz, rootNode);
-        }
     }
 
-    private void addArrayField(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
+    private void addCollection(Object obj, DefaultMutableTreeNode parentNode) {
+        Iterator<?> iter = ((Iterable<?>) obj).iterator();
+        int i = 0;
+
+        while(iter.hasNext()) {
+            Object collectionObj = (Object) iter.next();
+            DefaultMutableTreeNode indexNode = new DefaultMutableTreeNode(parentNode.getUserObject()+"["+i+"]");
+            parentNode.add(indexNode);
+            i++;
+            
+            DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+            objectMap.put(collectionObj, childNode);
+            createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
+            indexNode.add(childNode);
+        }
+        // Add length
+        parentNode.add(new DefaultMutableTreeNode("Length: "+ Integer.toString(i)));
+    }
+
+    private void addArray(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
         // Add component type
         Class<?> elType = arr.getComponentType();
         node.add(new DefaultMutableTreeNode("Component Type: " +elType.toString()));
@@ -151,11 +121,10 @@ public class ObjectVisualizer extends JFrame {
                         if(!objectMap.containsKey(arrElement)) {
                             objectMap.put(arrElement, indexNode);
                             createObjectTree(arrElement, arrElement.getClass(), indexNode);
-                        } else {
+                        } else 
                             indexNode.add(new DefaultMutableTreeNode("Reference to "+arrElement.toString()));
-                        }
-                    }  
-                    else 
+                        
+                    } else 
                         indexNode.add(new DefaultMutableTreeNode("Value: "+arrElement.toString()));
                 } 
    
@@ -194,9 +163,11 @@ public class ObjectVisualizer extends JFrame {
                 return;
             }
 
-            if (fType.isArray()) {
-                addArrayField(fieldObj, fType, fNode);
-            } else {
+            if (fType.isArray()) 
+                addArray(fieldObj, fType, fNode);
+            //else if(Collection.class.isAssignableFrom(fieldObj.getClass()))  
+            //    addCollection(fieldObj, fNode);
+            else {
                 // Add field value
                 if(fieldObj != null && !fType.isPrimitive()) {
                     if(!objectMap.containsKey(fieldObj)) {
@@ -206,8 +177,7 @@ public class ObjectVisualizer extends JFrame {
                     } else 
                         fNode.add(new DefaultMutableTreeNode("Reference to "+fieldObj.toString()));
 
-                }
-                else {
+                } else {
                     if (fieldObj == null)
                         fNode.add(new DefaultMutableTreeNode("Value: null"));
                     else
@@ -216,23 +186,25 @@ public class ObjectVisualizer extends JFrame {
             }
         }
     } 
+ 
+    public void saveTree(String file) {
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) tree.getModel().getRoot();
 
-    private void addInheritance(Class<?> clazz, DefaultMutableTreeNode node) {
-        DefaultMutableTreeNode iNode = new DefaultMutableTreeNode("Inheritance");
-        node.add(iNode);
-        iNode.add(new DefaultMutableTreeNode("extends "+ clazz.getSuperclass()));
-
-        for(Class<?> inter : clazz.getInterfaces()) {
-            iNode.add(new DefaultMutableTreeNode("implements " +inter.getName().toString()));
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writeNodeToFile(rootNode, writer, "");
+            System.out.println("Tree contents written to "+ file);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-    }  
+    }
 
-    private void createNodes(String nodeName, AccessibleObject[] members, DefaultMutableTreeNode parentNode) {
-        DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(nodeName);
-        parentNode.add(childNode);
+    private void writeNodeToFile(DefaultMutableTreeNode node, BufferedWriter writer, String indent) throws IOException {
+        writer.write(indent + node.getUserObject().toString() + "\n");
 
-        for (AccessibleObject member : members) {
-            childNode.add(new DefaultMutableTreeNode(member.toString()));
+        Enumeration<?> children = node.children();
+        while (children.hasMoreElements()) {
+            DefaultMutableTreeNode child = (DefaultMutableTreeNode) children.nextElement();
+            writeNodeToFile(child, writer, indent + "  ");
         }
     }
 

@@ -27,13 +27,16 @@ public class Deserializer {
         // Populate object fields
         populateFields(objectElements);
 
+        return getDeserializedObjects();
+    }
+
+    public List<Object> getDeserializedObjects() {
         List<Object> ol = new ArrayList<>();
         for(Map.Entry<String, Object> e : objectMap.entrySet()) {
             ol.add(e.getValue());
         }
-
-        //return objectMap.get("0");
         return ol;
+        //return objectMap.values().toArray(new Object[0]);
     }
 
     private void populateFields(List<Element> objectElements) {
@@ -194,9 +197,10 @@ public class Deserializer {
             Deserializer deserializer = new Deserializer();
             Object reconstitutedObject = deserializer.deserialize(document);
 
+            
             // Use the reconstitutedObject as needed
-            System.out.println(reconstitutedObject);
-            SwingUtilities.invokeLater(() -> {new ObjectVisualizer(reconstitutedObject).setVisible(true);});
+            //System.out.println(reconstitutedObject);
+            //SwingUtilities.invokeLater(() -> {new ObjectVisualizer(reconstitutedObject).setVisible(true);});
             
         } catch (Exception e) {
             e.printStackTrace();
