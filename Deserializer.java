@@ -1,10 +1,10 @@
 import ObjectPool.*;
 import org.jdom2.*;
-import org.jdom2.Element;
 import org.jdom2.input.SAXBuilder;
 
 import java.io.StringReader;
 import java.lang.reflect.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +41,7 @@ public class Deserializer {
                     obj = constructor.newInstance(new Object[] {});
                 }
                 pp("first obj: " + obj);
+
             } catch (ClassNotFoundException |  InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
                 //e.printStackTrace();
             }
@@ -73,7 +74,12 @@ public class Deserializer {
                         Field field = Class.forName(declaringClassName).getDeclaredField(fieldName);
 
                         field.setAccessible(true);
-                        field.set(object, getElementValue(fieldElement.getChildren().get(0), field.getType(), objectMap));
+                        List<Element> fieldContent = fieldElement.getChildren();
+
+                        if (fieldContent.size() == 0)   // field is null
+                            field.set(object, null);
+                        else
+                            field.set(object, getElementValue(fieldContent.get(0), field.getType(), objectMap));
 
                     } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
                         e.printStackTrace();
@@ -81,8 +87,12 @@ public class Deserializer {
                 }
            }
         }
-        
-        // The root object is the first one in the map
+
+        List<Object> ol = new ArrayList<>();
+        for(Map.Entry<String, Object> e : objectMap.entrySet()) {
+            ol.add(e.getValue());
+        }
+
         return objectMap.get("0");
     }
 
@@ -141,10 +151,26 @@ public class Deserializer {
             "    </field>\r\n" + //
             "  </object>\r\n" + //
             "</serialized>";
+            
+
+        String str2 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+            "<serialized>\r\n" + //
+            "  <object class=\"ObjectPool.CircularReference\" id=\"0\">\r\n" + //
+            "    <field name=\"circularRef\" declaringclass=\"ObjectPool.CircularReference\">\r\n" + //
+            "      <reference>1</reference>\r\n" + //
+            "    </field>\r\n" + //
+            "  </object>\r\n" + //
+            "  <object class=\"ObjectPool.CircularReference\" id=\"1\">\r\n" + //
+            "    <field name=\"circularRef\" declaringclass=\"ObjectPool.CircularReference\">\r\n" + //
+            "      <reference>0</reference>\r\n" + //
+            "    </field>\r\n" + //
+            "  </object>\r\n" + //
+            "</serialized>";
+
 
         SAXBuilder saxBuilder = new SAXBuilder();
         try {
-            Document document = saxBuilder.build(new StringReader(xmlString));
+            Document document = saxBuilder.build(new StringReader(str2));
 
             Deserializer deserializer = new Deserializer();
             Object reconstitutedObject = deserializer.deserialize(document);

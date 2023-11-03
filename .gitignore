@@ -6,7 +6,8 @@ ClassC.java
 ClassD.java
 InterfaceA.java
 InterfaceB.java
-
+settings.json
+deserialized.txt
 
 # Compiled class file
 *.class

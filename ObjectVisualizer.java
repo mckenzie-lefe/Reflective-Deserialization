@@ -15,9 +15,30 @@ public class ObjectVisualizer extends JFrame {
         super("Object Visualizer");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        DefaultMutableTreeNode rootNode;
 
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
-        createObjectTree(obj, obj.getClass(), rootNode);
+        if(Collection.class.isAssignableFrom(obj.getClass())) {
+            rootNode = new DefaultMutableTreeNode("Objects");
+            try {
+                Iterator<?> iter = ((Iterable<?>) obj).iterator();
+                System.out.println(iter);
+                while(iter.hasNext()) {
+                    Object collectionObj = (Object) iter.next();
+                    
+                    DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+                    createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
+                    rootNode.add(childNode);
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("normal");
+            rootNode = new DefaultMutableTreeNode(obj.getClass().getName());
+            createObjectTree(obj, obj.getClass(), rootNode);
+        }
+        
         JTree tree = new JTree(new DefaultTreeModel(rootNode));
         tree.setCellRenderer(new CustomTreeCellRenderer());
 
@@ -34,14 +55,16 @@ public class ObjectVisualizer extends JFrame {
             System.out.println("Class is null");
             return;
         }
+        System.out.println(obj);
 
         // handle Array Objects
         if (clazz.isArray()) {
             addArrayField(obj, clazz, rootNode);
         } else {
+
             // Add inheritance nodes
             addInheritance(clazz, rootNode);
-
+            
             // Add method nodes
             createNodes("Methods", clazz.getDeclaredMethods(), rootNode);
 
@@ -53,7 +76,6 @@ public class ObjectVisualizer extends JFrame {
         }
     }
 
-
     private void addArrayField(Object obj, Class<?> arr, DefaultMutableTreeNode node) {
         // Add component type
         DefaultMutableTreeNode ctNode = new DefaultMutableTreeNode("Component Type");
@@ -62,6 +84,9 @@ public class ObjectVisualizer extends JFrame {
 
         // Add length
         node.add(new DefaultMutableTreeNode("Length: "+Array.getLength(obj)));
+
+        // Add inheritance nodes
+        addInheritance(arr, node);
 
         DefaultMutableTreeNode vNode = new DefaultMutableTreeNode("Values");
         node.add(vNode);
@@ -213,7 +238,10 @@ public class ObjectVisualizer extends JFrame {
                 objToInspect.setObjectArrayElement(2, new SimpleObject(6));
             } catch (Exception e) {
                 e.printStackTrace();
-            }  // Replace with your actual object
+            }  
+            //Map<String, Object> objectMap = new HashMap<>();
+            //objectMap.put(so);
+
             new ObjectVisualizer(objToInspect).setVisible(true);
         });
     }
