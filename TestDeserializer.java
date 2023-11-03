@@ -27,10 +27,10 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(document);
+            Object deserializedObjects = deserializer.deserialize(document);
 
-            assertTrue(deserializedObjects.get(0) instanceof SimpleObject);
-            assertEquals(42, ((SimpleObject) deserializedObjects.get(0)).primitiveInt);
+            assertTrue(deserializedObjects instanceof SimpleObject);
+            assertEquals(42, ((SimpleObject) deserializedObjects).primitiveInt);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -59,10 +59,10 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(document);
+            Object deserializedObjects =  deserializer.deserialize(document);
 
-            assertTrue(deserializedObjects.get(0).getClass().isArray());
-            Object[] array = (Object[]) deserializedObjects.get(0);
+            assertTrue(deserializedObjects.getClass().isArray());
+            Object[] array = (Object[]) deserializedObjects;
             assertEquals(3, array.length);
 
             for (Object element : array) {
@@ -97,15 +97,13 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(document);
+            Object deserializedObjects = deserializer.deserialize(document);
 
-            assertEquals(2, deserializedObjects.size());
+            assertTrue(deserializedObjects instanceof CircularReference);
+            CircularReference firstObject = ((CircularReference) deserializedObjects);
+            CircularReference secondObject = firstObject.circularRef;
 
-            Object firstObject = deserializedObjects.get(0);
-            Object secondObject = deserializedObjects.get(1);
-
-            assertTrue(firstObject instanceof CircularReference);
-            assertTrue(secondObject instanceof CircularReference);
+            assertEquals(firstObject, secondObject.circularRef);
 
             CircularReference firstCircularRef = (CircularReference) firstObject;
             CircularReference secondCircularRef = (CircularReference) secondObject;
@@ -156,10 +154,7 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(document);
-
-            assertEquals(5, deserializedObjects.size());
-            Object deserializedObject = deserializedObjects.get(0);
+            Object deserializedObject =  deserializer.deserialize(document);
 
             assertTrue(deserializedObject instanceof CollectionInstance);
 
@@ -195,10 +190,7 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(document);
-
-            assertEquals(2, deserializedObjects.size());
-            Object deserializedObject = deserializedObjects.get(0);
+            Object deserializedObject =  deserializer.deserialize(document);
 
             assertTrue(deserializedObject instanceof ArrayOfPrimitives);
 
@@ -240,10 +232,10 @@ public class TestDeserializer {
 
         try {
             Document document = saxBuilder.build(new StringReader(xmlString));
-            List<Object> deserializedObject = (List<Object>) deserializer.deserialize(document);
+            Object deserializedObject = deserializer.deserialize(document);
 
-            assertTrue(deserializedObject.get(0).getClass().isArray());
-            Object[] array = (Object[]) deserializedObject.get(0);
+            assertTrue(deserializedObject.getClass().isArray());
+            Object[] array = (Object[]) deserializedObject;
             assertEquals(3, array.length);
 
             assertTrue(array[0] instanceof SimpleObject);
@@ -251,26 +243,6 @@ public class TestDeserializer {
 
             assertTrue(array[2] instanceof SimpleObject);
             assertEquals(56, ((SimpleObject) array[2]).primitiveInt);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("Exception during deserialization");
-        }
-    }
-
-    @Test
-    public void testDeserializeEmptyDocument() {
-        String emptyXmlString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" +
-                "<serialized></serialized>";
-
-        Deserializer deserializer = new Deserializer();
-        SAXBuilder saxBuilder = new SAXBuilder();
-
-        try {
-            Document emptyDocument = saxBuilder.build(new StringReader(emptyXmlString));
-            List<Object> deserializedObjects = (List<Object>) deserializer.deserialize(emptyDocument);
-
-            assertTrue(deserializedObjects.isEmpty());
 
         } catch (Exception e) {
             e.printStackTrace();

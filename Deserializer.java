@@ -27,10 +27,11 @@ public class Deserializer {
         // Populate object fields
         populateFields(objectElements);
 
-        return getDeserializedObjects();
+        //return getDeserializedObjects();
+        return objectMap.get("0");
     }
 
-    public List<Object> getDeserializedObjects() {
+    public Object getDeserializedObjects() {
         List<Object> ol = new ArrayList<>();
         for(Map.Entry<String, Object> e : objectMap.entrySet()) {
             ol.add(e.getValue());

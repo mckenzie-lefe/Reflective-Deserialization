@@ -1,0 +1,124 @@
+commit a9ecf4d49c5f74e2f0b160bacb9fa7786d167f88
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Nov 3 16:36:16 2023 -0600
+
+    V12 - update JUnit test
+    
+    - test deserialization of objects from ObjectPool
+
+commit 7ec33a77041b1c0a7dfb030b872fdbb9018290a9
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Nov 3 15:11:32 2023 -0600
+
+    V11 - refactor
+    
+    - extract method getDeserializedObjects
+    - extract method createTree
+    - extract method addCollection
+    - rename method addArray
+
+commit f3cf89ff708c05f9e7a7c5939e9251f42ea93c75
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Nov 3 13:42:50 2023 -0600
+
+    V10 - bug fixes
+    
+    - write ObjectVisualizer tree to file
+    - handle arrays with null objects
+    - fix visualizer for ArrayOfPrimitives
+
+commit 7a7b2f7c87560543c7c2666f0bc8706588e6e2e9
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Nov 3 02:21:22 2023 -0600
+
+    V9 - refactor
+    
+    - in Deserializer Class, extract methods populateFields & createObjectInstances
+    - remove un-necessary inspection in ObjectVisualizer
+    - re-format ObjectVisualizer to increase clarity
+
+commit 142e8deb8079c3f17ed86ef5957c8da1a932b8f4
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Thu Nov 2 23:33:59 2023 -0600
+
+    V8 - create Receiver program
+    
+    - implement Receiver class
+    - bug fix in ObjectVisualizer
+
+commit 16ccca2bf99ddf3477d7e3e51018f08fd8c6a1a4
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Thu Nov 2 01:49:51 2023 -0600
+
+    V7 - bug fixes
+    
+    - update ObjectPool classes
+    - fix bugs in ObjectVisualizer
+    - fix bugs in Deserializer
+
+commit fbed670e418866fc474b7098ccb7865d3e32a893
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Wed Nov 1 11:03:21 2023 -0600
+
+    V6 - handle array objects
+    
+    - handle deserializing array objects
+    - handle array objects in visualizer
+
+commit a709b33a0ab5e054549240991e834acc38ad01b4
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Tue Oct 31 23:44:29 2023 -0600
+
+    V5 - populate object fields
+    
+    - finish deserializing fields of objects
+    - create setPrimitiveFields helper method
+
+commit 2b811fcb6ade842e9281a99952de7231b08673c9
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Tue Oct 31 18:43:06 2023 -0600
+
+    V4 - Refactor
+    
+    - rename method -> addInheritance & addFields
+    - extract method  -> createNodes
+
+commit d4695f55669ed33e3ad1e009e7521f17ddd60515
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Tue Oct 31 18:01:10 2023 -0600
+
+    V3 - finish object visualizer
+    
+    - finish object inspection needed for ObjectVisualizer class
+
+commit 8515e1b777bd5aa63820bdf86be7abd3e0703ddd
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Tue Oct 31 11:52:06 2023 -0600
+
+    V2 - start object deserialization
+    
+    - create instances of objects in document
+
+commit de7b4f0ed8dafae3989affe545d7079c4b646866
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Tue Oct 31 11:50:05 2023 -0600
+
+    V1 - Start Object Visualizer
+    
+    - visualize objects fields, constructors, methods, interfaces, and superclass
+
+commit c632c325d781013a5aa71a9a4bf84711d433a675
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Oct 27 14:29:58 2023 -0600
+
+    init. commit
+    
+    - start README
+    - create Deserializer and TestDeserializer java files
+    - get object elements from JDOM document
+
+commit 58f2afdac0326439a66117e668951d33e374981d
+Author: McKenzie Lefebvre <109600778+mckenzie-lefe@users.noreply.github.com>
+Date:   Fri Oct 27 14:02:31 2023 -0600
+
+    Initial commit
