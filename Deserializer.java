@@ -64,16 +64,24 @@ public class Deserializer {
                 }
 
             } else if (Collection.class.isAssignableFrom(object.getClass())) {
-                for (int i = 0; i < Integer.valueOf(objectElement.getAttributeValue("length")); i++) {
-                    try {
-                        // Find the add method of the collection class
-                        Method addMethod = Collection.class.getDeclaredMethod("add", Object.class);
-                        addMethod.setAccessible(true);
-                        addMethod.invoke(object, getElementValue(elements.get(i), elements.get(i).getClass(), objectMap));
+                try {
+                    // Find the add method of the collection class
+                    Method addMethod = Collection.class.getDeclaredMethod("add", Object.class);
+                    addMethod.setAccessible(true);
 
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    try {
+                        for (int i = 0; i < Integer.valueOf(objectElement.getAttributeValue("length")); i++) {
+                            addMethod.invoke(object, getElementValue(elements.get(i), elements.get(i).getClass(), objectMap)); 
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("ERROR: Cannot paarse null string");
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
                     }
+
+                } catch (Exception e) {
+                    System.out.println("Error getting add method for collection.");
+                    e.printStackTrace();
                 }
                 
             } else {

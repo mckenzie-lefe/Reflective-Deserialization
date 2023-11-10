@@ -85,10 +85,15 @@ public class ObjectVisualizer extends JFrame {
             parentNode.add(indexNode);
             i++;
             
-            DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
-            objectMap.put(collectionObj, childNode);
-            createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
-            indexNode.add(childNode);
+            if (collectionObj == null) {
+                indexNode.add(new DefaultMutableTreeNode("null"));
+            } else {
+                DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(collectionObj.getClass().getName());
+                objectMap.put(collectionObj, childNode);
+            
+                createObjectTree(collectionObj, collectionObj.getClass(), childNode); 
+                indexNode.add(childNode);
+            } 
         }
         // Add length
         parentNode.add(new DefaultMutableTreeNode("Length: "+ Integer.toString(i)));
